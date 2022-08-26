@@ -1,0 +1,274 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        .qty{
+            width:35px;
+        }
+
+        .empty-cart{
+            text-align:center;
+        }
+
+
+        .cart-container {
+            border:1px solid black;
+            width: 920px;
+            margin: 100px auto;
+            height: auto;
+            //display: flex;
+            //flex-wrap: wrap;
+            padding:20px 40px;
+        }
+
+        .cart-item{
+            //border:1px solid black;
+            margin-bottom:20px;
+        }
+
+        .cart-container p{
+            //border-right:2px solid red;
+
+        }
+
+        * {
+            margin: 0px;
+            padding: 0px;
+            box-sizing: border-box;
+            font-family: 'Segoe UI';
+        }
+
+        .hide{
+            display:none;
+        }
+
+        .bill {
+            font-weight: 100;
+            width: 920px;
+            margin: 100px auto;
+        }
+
+        .checkout {
+            width: 220px;
+            border:1px solid black;
+            margin: 100px auto 20px;
+            display:block;
+            text-align:center;
+            text-transform:uppercase;
+            padding:10px 0px;
+            background:black;
+            color:white;
+            cursor:pointer;
+        }
+
+        .ccheckout {
+            width: 220px;
+            border: 1px solid black;
+            margin: 0px auto;
+            
+            text-align: center;
+            text-transform: uppercase;
+            padding: 10px 0px;
+            background: green;
+            color: white;
+            cursor: pointer;
+        }
+
+        .pageBtns {
+            float: right;
+            margin-right: 50px;
+        }
+
+        .appname {
+            text-align: center;
+            margin-top: 0px;
+        }
+    </style>
+</head>
+<body>
+
+
+    <div class="pageBtns">
+        <h2 class="appname">Checkout Page</h2>
+        <a href="#" class="logout">Logout</a>
+    </div>
+    <div class="cart-container">
+        <div class="empty-cart hide">asd</div>
+    </div>
+    <h2 class="bill hide"></h2>
+    <span class="checkout">Checkout</span>
+    <p class="ccheckout hide">Confirm Checkout</p>
+
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+
+            if (!localStorage.getItem('id')) {
+                alert('login to view cart details')
+                window.location.href = '/index.html'
+            } else {
+                const userId = localStorage.getItem('id');
+                fetch(`http://localhost:5000/cart/${userId}`)
+                    .then((res) => {
+                        return res.json()
+                    })
+                    .then((data) => {
+                        console.log(data.cart)
+                        console.log(data.cart.items)
+                        if (data.cart.items.length == 0) {
+                            document.querySelector('.empty-cart').classList.remove('hide');
+                            document.querySelector('.empty-cart').innerText = 'Your cart is empty, add some product'
+                        }
+                        document.querySelector('.bill').classList.remove('hide');
+                        document.querySelector('.bill').innerText = `Total Bill: ${data.cart.bill}`;
+                        
+                        console.log(data.cart.items.length)
+                        data.cart.items.map((i) => {
+                            document.querySelector('.cart-container').innerHTML += `
+                                               <div class="cart-item" data-id=${i.productId}>
+                                                <p>Product Name:&nbsp ${i.name}</p>
+                                                <p>Product Price:&nbsp ${i.price}</p>
+                                                Product Quantity:&nbsp<input type="number" value=${i.quantity} placholder=${i.quantity} class="qty"/>
+                                                <button class="updateBtn">Update Item</button>&nbsp;&nbsp;<button class="delBtn">Delete Item</button>
+                                               </div>
+                                               `;
+
+                            document.querySelectorAll('.updateBtn').forEach((ub) => {
+                                ub.addEventListener('click', function (e) {
+                                    console.log(e.target.previousElementSibling.value)
+                                    const qty = parseInt(e.target.previousElementSibling.value);
+                                    console.log(e.target.parentElement.dataset.id)
+                                    const productId = e.target.parentElement.dataset.id;
+                                    const userId = localStorage.getItem('id');
+                                    console.log(userId)
+
+                                    fetch(`http://localhost:5000/cart/${userId}`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-type': 'application/json',
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            productId: productId,
+                                            qty: qty
+                                        })
+                                    }).then((res) => {
+                                        return res.json()
+                                    }).then((data) => {
+                                        console.log(data)
+                                    }).catch((e) => {
+                                        console.log(e)
+                                    })
+
+
+
+                                    window.location.reload();
+                                })
+                            })
+
+                            document.querySelectorAll('.delBtn').forEach((db) => {
+                                db.addEventListener('click', function (e) {
+                                    // alert('deleting')
+                                    const userId = localStorage.getItem('id');
+                                    console.log(userId)
+                                    const productId = e.target.parentElement.dataset.id;
+                                    console.log(productId)
+                                    fetch(`http://localhost:5000/cart/${userId}/${productId}`, {
+                                        method: 'DELETE',
+                                    }).then((res) => {
+                                        return res.json()
+                                    }).then((data) => {
+                                        console.log(data)
+                                        window.location.reload();
+                                    }).catch((e) => {
+                                        console.log(e)
+                                    })
+
+                                })
+                            })
+
+                        })
+                    })
+                    .catch((e) => {
+                        console.log(e)
+                    })
+            }
+
+
+        })
+
+        document.querySelector('.logout').addEventListener('click', function () {
+            localStorage.clear();
+            window.location.href = '/index.html'
+        })
+
+         
+
+        document.querySelector('.checkout').addEventListener('click', function () {
+            
+            alert('wait for few seconds and then click confirm checkout button')
+            const amount = parseInt(document.querySelector('.bill').innerText.slice(12))
+            console.log(amount)
+            var orderId;
+
+            //amountValue = document.querySelector('.amount').value;
+            //console.log(amountValue)
+            const response = fetch('http://localhost:5000/admin/order', {
+                'method': 'POST',
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": JSON.stringify({
+                    "amount": amount,
+                    "email": localStorage.getItem('email')
+                })
+            }).then((res) => {
+                return res.json();
+                //console.log(res)
+            }).then((data) => {
+                console.log(data)
+                console.log(data.order.id)
+                orderId = data.order.id;
+            }).catch((e) => {
+                console.log(e)
+            })
+
+
+            var options = {
+                "key": "rzp_test_obMCtlKp3EEqKX", // Enter the Key ID generated from the Dashboard
+                "amount": amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+                "currency": "INR",
+                "name": "Acme Corp",
+                "description": "Test Transaction",
+                "image": "https://example.com/your_logo",
+                "order_id": orderId, //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+                "handler": function (response) {
+                    alert(response.razorpay_payment_id);
+                    alert(response.razorpay_order_id);
+                    alert(response.razorpay_signature)
+                }
+            }
+
+            var rzp1 = new Razorpay(options);
+
+            console.log(document.querySelector('.ccheckout').classList.remove('hide'));
+            
+
+            document.querySelector('.ccheckout').addEventListener('click', async function () {
+                
+                alert('works')
+                await rzp1.open();
+                
+                document.querySelector('.ccheckout').classList.add('hide')
+                document.querySelector('.cart-container').innerHTML = '<h2>Payment successful, order to be shipped in 2-3 days<br/></h2>';
+            })
+            
+            
+        })
+    </script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        *{
+            margin:0px;
+            padding:0px;
+            box-sizing:border-box;
+            font-family:'Segoe UI'; 
+        }
+
+        
+
+
+        .items-container {
+            //border:1px solid black;
+            width:920px;
+            margin:100px auto;
+            height:auto;
+            display:flex;
+            flex-wrap:wrap;
+        }
+
+        .item{
+            border:1px solid black;
+            width:280px;
+            height:300px;
+            margin-top:30px;
+            margin-right:10px;
+        }
+
+        .item p{
+            margin-bottom:5px;
+        }
+
+        .quantity{
+            width:30px;
+            height:30px;
+            text-align:center;
+        }
+
+        .cartbtn{
+            padding:4px;
+        }
+
+        .addtocart, .viewcart{
+            border:1px solid black;
+            padding:5px 10px;
+            margin-top:10px;
+            width:150px;
+            cursor:pointer;
+            text-align:center;
+        }
+
+        .pageBtns{
+            float:right;
+            margin-right:50px;
+        }
+
+        .appname{
+            text-align:center;
+            margin-top:20px;
+        }
+
+        .hide{
+            display:none;
+        }
+
+        form{
+            border:1px solid black;
+            width:400px;
+            position:absolute;
+            top:100px;
+            right:0px;
+
+        }
+
+
+    </style>
+</head>
+<body>
+    <h2 class="appname">Basic E Shop</h2>
+    <div class="pageBtns">
+        <a href="#" class="register">Register</a>
+        <a href="#" class="login">Login</a>
+        <span class="username"></span>
+        <a href="#" class="logout hide">Logout</a>
+        <p class="hide vieworders"><a href="/orders.html">View Orders</a></p>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <!--submitting data without making api call, works fine, but the response is directly shown in the browser, so guess it's only suitable for submitting contact details in a website -->
+
+    <form method="POST" action="/auth/register" class="hide">
+        <input type="text" name="email" />
+        <input type="text" name="password" />
+        <button type="submit">Register</button>
+    </form>
+
+    <!--end of form submission without making api call-->
+
+    <form class="form hide">
+        <input type="text" class="email" />
+        <input type="text" class="password" />
+        <button class="register">Register</button>
+    </form>
+
+
+    <form class="loginform hide">
+        <input type="text" class="lemail" />
+        <input type="text" class="lpassword" />
+        <button class="login">Login</button>
+    </form>
+
+
+
+    <!-- LOGIN FORM -->
+
+    <div class="items-container">
+
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+
+
+
+            if (localStorage.getItem('id')) {
+                document.querySelector('.register').classList.add('hide');
+                document.querySelector('.login').classList.add('hide');
+                document.querySelector('.logout').classList.remove('hide');
+            } 
+
+            if (localStorage.getItem('isAdmin') == 'true') {
+                document.querySelector('.vieworders').classList.remove('hide')
+            }
+
+            console.log(localStorage.getItem('isAdmin'))
+            
+
+
+            fetch('http://localhost:5000/items')
+                .then((res) => {
+                    return res.json()
+                }).then((data) => {
+                    console.log(data.items)
+                    data.items.map((i) => {
+                        document.querySelector('.items-container').innerHTML += `
+                                            <div class="item" data-id=${i._id}>
+                                                <p class="title">Title: ${i.title}</p>
+                                                <p class="desc">Description: ${i.description}</p>
+                                                <p class="cat">Category: ${i.category}</p>
+                                                <p class="price">Price: ${i.price}</p>
+                                                <button class="cartbtn add">+</button>
+                                                <input class="quantity" placeholder="1" value="0"/>
+                                                <button class="cartbtn minus">-</button>
+                                                <p class="addtocart">Add to Cart</p>
+                                                <p class="viewcart"><a href='/cart.html'>View Cart</a></p>
+                                            </div>
+
+                                        `;
+
+                        document.querySelectorAll('.add').forEach((a) => {
+                            a.addEventListener('click', function (e) {
+                                //alert('hi')
+                                console.log(e.target.nextElementSibling.value)
+                                var num = parseInt(e.target.nextElementSibling.value)
+                                num = num + 1;
+                                e.target.nextElementSibling.value = num;
+                            })
+                        })
+
+
+                        document.querySelectorAll('.minus').forEach((a) => {
+                            a.addEventListener('click', function (e) {
+                                //alert('hi')
+                                console.log(e.target.previousElementSibling.value)
+                                var num = parseInt(e.target.previousElementSibling.value)
+                                num = num - 1;
+                                e.target.previousElementSibling.value = num;
+                            })
+                        })
+
+                        
+                        document.querySelectorAll('.addtocart').forEach((atc) => {
+                            atc.addEventListener('click', function (e) {
+
+                                if (!localStorage.getItem('id')) {
+                                    alert('login to add items to cart')
+                                } else {
+                                    //alert('login functionality')
+                                    console.log(localStorage.getItem('id'))
+                                    const userId = localStorage.getItem('id'); 
+                                    console.log(e.target.parentElement.dataset.id)
+                                    const productId = e.target.parentElement.dataset.id;
+                                    console.log(e.target.previousElementSibling.previousElementSibling.value)
+                                    const quantity = parseInt(e.target.previousElementSibling.previousElementSibling.value)
+
+                                    if (quantity == 0) {
+                                        return alert('Item count cannot be zero')
+                                    } else if (quantity < 0) {
+                                        return alert('Item count cannot be less than zero')
+                                    }
+                                    
+
+                                    fetch(`http://localhost:5000/cart/${userId}`, {
+                                        method: 'POST', 
+                                        headers: {
+                                            'Content-type': 'application/json', 
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            productId: productId,
+                                            quantity: quantity,
+                                        })
+
+                                    }).then((res) => {
+                                        return res.json(); 
+                                    }).then((data) => {
+                                        console.log(data)
+                                        alert('item added to cart')
+                                    }).catch((e) => {
+                                        console.log(e)
+                                    })
+
+                                    
+                                }
+                            })
+                        })
+                        
+
+
+                    })
+                }).catch((e) => {
+                    console.log(e)
+                })
+        })
+
+        
+        document.querySelector('.register').addEventListener('click', function () {
+            document.querySelector('.form').classList.toggle('hide');
+            document.querySelector('.loginform').classList.add('hide');
+        })
+
+        document.querySelector('.login').addEventListener('click', function () {
+            document.querySelector('.loginform').classList.toggle('hide');
+            document.querySelector('.form').classList.add('hide');
+        })
+
+
+        document.querySelector('.form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const email = document.querySelector('.email').value;
+            const password = document.querySelector('.password').value;
+            alert(email + password)
+
+            fetch('http://localhost:5000/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            }).then((res) => {
+                return res.json()
+            }).then((data) => {
+                console.log(data)
+            }).catch((e) => {
+                console.log(e)
+            })
+        })
+
+
+        document.querySelector('.loginform').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const email = document.querySelector('.lemail').value;
+            const password = document.querySelector('.lpassword').value;
+            //alert(email + password)
+
+            
+
+            fetch('http://localhost:5000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            }).then((res) => {
+                return res.json()
+            }).then((data) => {
+                console.log(data)
+                
+                localStorage.setItem('id', data._id)
+                localStorage.setItem('email', data.email);
+                localStorage.setItem('isAdmin', data.isAdmin);
+
+                document.querySelector('.register').classList.add('hide');
+                document.querySelector('.login').classList.add('hide');
+                document.querySelector('.logout').classList.remove('hide');
+                document.querySelector('.loginform').classList.add('hide');
+                document.querySelector('.username').innerHTML = data.email;
+
+                if (localStorage.getItem('isAdmin') == 'true') {
+                    document.querySelector('.vieworders').classList.remove('hide')
+                }
+
+            }).catch((e) => {
+                console.log(e)
+            })
+
+        
+        })
+
+        document.querySelector('.logout').addEventListener('click', function () {
+            localStorage.clear(); 
+            document.querySelector('.register').classList.remove('hide');
+            document.querySelector('.login').classList.remove('hide');
+            document.querySelector('.logout').classList.add('hide');
+            document.querySelector('.vieworders').classList.add('hide');
+            document.querySelector('.username').innerHTML = '';
+
+            fetch('http://localhost:5000/auth/logout')
+                .then((res) => {
+                    return res.json()
+                })
+                .then((data) => {
+                    console.log(data)
+                })
+                .catch((e) => {
+                    console.log(e)
+                })
+        })
+
+
+
+    </script>
+</body>
+</html>

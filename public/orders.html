@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        *{
+            margin:0px;
+            padding:0px;
+            box-sizing:border-box;
+            font-family: 'Segoe UI';
+        }
+
+        .container {
+            border:1px solid black;
+            width: 920px;
+            margin: 100px auto;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        
+
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            alert('hi...')
+            fetch('http://localhost:5000/admin/order')
+                .then((res) => {
+                    return res.json()
+                })
+                .then((data) => {
+                    console.log(data.orders)
+                    data.orders.map((d) => {
+                        document.querySelector('.container').innerHTML += `
+                            <table class="order">
+                                <thead>
+                                    <tr>
+                                        <td><b>User:</b> ${d.email}</td>
+                                        <td><b>Order Id:</b> ${d.orderId}</td>
+                                        <td><b> Name: </b>${d.products}</td>
+                                        <td><b>Amount:</b> ${d.amount}</td>
+                                        
+                                    </tr>
+                                </thead>
+                            </table>
+                        
+                    `;
+                    })
+                     
+                })
+                .catch((e) => {
+                    console.log(e)
+                })
+        })
+    </script>
+</body>
+</html>
